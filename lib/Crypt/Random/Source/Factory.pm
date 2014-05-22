@@ -3,13 +3,14 @@ package Crypt::Random::Source::Factory;
 
 our $VERSION = '0.11';
 
-use Any::Moose;
-use Class::Load 'load_class';
+use Moo;
 
 use Carp qw(croak);
-
 use Module::Find;
-use namespace::autoclean;
+use Module::Runtime qw(require_module);
+use Types::Standard qw(ClassName Bool ArrayRef Str);
+
+use namespace::clean;
 
 sub get {
     my ( $self, %args ) = @_;
@@ -34,10 +35,12 @@ sub get_strong {
 }
 
 has weak_source => (
-    isa => "ClassName",
+    isa => ClassName,
     is  => "rw",
-    lazy_build => 1,
+    lazy => 1,
+    builder => 1,
     clearer    => "clear_weak_source",
+    predicate  => "has_weak_source",
     handles    => { new_weak => "new" },
 );
 
@@ -47,10 +50,12 @@ sub _build_weak_source {
 }
 
 has strong_source => (
-    isa => "ClassName",
+    isa => ClassName,
     is  => "rw",
-    lazy_build => 1,
+    lazy => 1,
+    builder => 1,
     clearer    => "clear_strong_source",
+    predicate  => 'has_strong_source',
     handles    => { new_strong => "new" },
 );
 
@@ -60,10 +65,12 @@ sub _build_strong_source {
 }
 
 has any_source => (
-    isa => "ClassName",
+    isa => ClassName,
     is  => "rw",
-    lazy_build => 1,
+    lazy => 1,
+    builder => 1,
     clearer    => "clear_any_source",
+    predicate  => 'has_any_source',
     handles    => { new_any => 'new' },
 );
 
@@ -74,8 +81,11 @@ sub _build_any_source {
 
 has scan_inc => (
     is  => "ro",
-    isa => "Bool",
-    lazy_build => 1,
+    isa => Bool,
+    lazy => 1,
+    builder => 1,
+    clearer => 'clear_scan_inc',
+    predicate => 'has_scan_inc',
 );
 
 sub _build_scan_inc {
@@ -89,9 +99,12 @@ sub _build_scan_inc {
 }
 
 has weak_sources => (
-    isa => "ArrayRef[Str]",
+    isa => ArrayRef[Str],
     is  => "rw",
-    lazy_build => 1,
+    lazy => 1,
+    builder => 1,
+    clearer => 'clear_weak_sources',
+    predicate => 'has_weak_sources',
 );
 
 sub _build_weak_sources {
@@ -109,9 +122,12 @@ sub _build_weak_sources {
 }
 
 has strong_sources => (
-    isa => "ArrayRef[Str]",
+    isa => ArrayRef[Str],
     is  => "rw",
-    lazy_build => 1,
+    lazy => 1,
+    builder => 1,
+    clearer => 'clear_strong_sources',
+    predicate => 'has_strong_sources',
 );
 
 sub _build_strong_sources {
@@ -130,7 +146,7 @@ sub _build_strong_sources {
 sub best_available {
     my ( $self, @sources ) = @_;
 
-    my @available = grep { local $@; eval { Class::Load::load_class($_); $_->available }; } @sources;
+    my @available = grep { local $@; eval { require_module($_); $_->available }; } @sources;
 
     my @sorted = sort { $b->rank <=> $a->rank } @available;
 
@@ -142,7 +158,7 @@ sub first_available {
 
     foreach my $class ( @sources ) {
         local $@;
-        return $class if eval { Class::Load::load_class($class); $class->available };
+        return $class if eval { require_module($class); $class->available };
     }
 }
 
