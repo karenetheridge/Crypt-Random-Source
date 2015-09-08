@@ -3,14 +3,16 @@ package Crypt::Random::Source::Base::RandomDevice;
 
 our $VERSION = '0.11';
 
-use Any::Moose;
+use Moo;
 
 extends qw(Crypt::Random::Source::Base::File);
-use namespace::autoclean;
+use namespace::clean;
 
 sub rank { 100 } # good quality, pretty fast
 
 has '+path' => (
+    lazy => 1,
+    required => 0,
     builder => "default_path",
 );
 
